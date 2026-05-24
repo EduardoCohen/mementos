@@ -237,4 +237,4 @@ MIT
 
 ## Autor
 
-[Eduardo Cohen](https://eduardocohen.com) - 2026
+<a href="https://eduardocohen.com" target="_blank" rel="noopener noreferrer">Eduardo Cohen</a> - 2026
