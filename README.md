@@ -26,6 +26,28 @@ Sistema de gestión de recuerdos y memorias personales. Interfaz dark theme con 
 
 > Para cambiar la contraseña: hacé click en el nombre de usuario en el header.
 
+## Capturas de pantalla
+
+### 🔐 Login
+
+![Login](screenshots/login.jpg)
+
+### 📋 Lista de recuerdos
+
+![App recuerdos](screenshots/app-recuerdos.jpg)
+
+### ✏️ Nuevo recuerdo con tags
+
+![Nuevo recuerdo](screenshots/nuevo-recuerdo.jpg)
+
+### 🔒 Cambio de contraseña
+
+![Cambiar contraseña](screenshots/cambiar-password.jpg)
+
+### 🏷️ Tags como filtro
+
+![Tags filtros](screenshots/tags-filtros.jpg)
+
 ## Instalación
 
 ```bash
