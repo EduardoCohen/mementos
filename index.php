@@ -238,11 +238,11 @@ if (!$check['logged']) {
     <header>
         <h1>🕰️ Mementos <span>v1.0</span></h1>
         <div class="header-right">
+            <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo recuerdo</button>
             <span class="user-badge">
                 👤 <span class="username" onclick="openPasswordModal()" title="Cambiar contraseña"><?=htmlspecialchars($_SESSION['username'])?></span>
             </span>
             <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
-            <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo recuerdo</button>
         </div>
     </header>
 
