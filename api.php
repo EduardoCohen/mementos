@@ -1,34 +1,14 @@
 <?php
 /**
- * Mementos - API
+ * Mementos - API de Recuerdos
  */
 
-define('DB_PATH', __DIR__ . '/mementos.db');
+require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/classes/Auth.php';
+
 header('Content-Type: application/json');
 
-function getDB() {
-    $db = new PDO('sqlite:' . DB_PATH);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $db->exec("PRAGMA journal_mode=WAL");
-    return $db;
-}
-
-function initDB() {
-    $db = getDB();
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS recuerdos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            titulo TEXT NOT NULL,
-            contenido TEXT,
-            categoria TEXT DEFAULT 'general',
-            tags TEXT DEFAULT '',
-            creado TEXT DEFAULT (datetime('now','localtime')),
-            modificado TEXT DEFAULT (datetime('now','localtime'))
-        )");
-}
-
-initDB();
+Auth::requireAuth();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true);

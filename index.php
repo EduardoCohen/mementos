@@ -1,50 +1,17 @@
 <?php
 /**
- * Mementos - Sistema de Recuerdos
+ * Mementos - App Principal
  * Stack: PHP 8.3 + SQLite + JS vanilla
  */
 
-define('DB_PATH', __DIR__ . '/mementos.db');
+require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/classes/Auth.php';
 
-function getDB() {
-    $db = new PDO('sqlite:' . DB_PATH);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $db->exec("PRAGMA journal_mode=WAL");
-    return $db;
+$check = Auth::check();
+if (!$check['logged']) {
+    header('Location: /mementos/login.php');
+    exit;
 }
-
-function initDB() {
-    $db = getDB();
-    $sql = <<<SQL
-        CREATE TABLE IF NOT EXISTS recuerdos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            titulo TEXT NOT NULL,
-            contenido TEXT,
-            categoria TEXT DEFAULT 'general',
-            tags TEXT DEFAULT '',
-            creado TEXT DEFAULT (datetime('now','localtime')),
-            modificado TEXT DEFAULT (datetime('now','localtime'))
-        )
-SQL;
-    $db->exec($sql);
-    $sql2 = <<<SQL
-        CREATE TABLE IF NOT EXISTS config (
-            clave TEXT PRIMARY KEY,
-            valor TEXT
-        )
-SQL;
-    $db->exec($sql2);
-
-    // Categorías por defecto
-    $default_cats = ['general', 'trabajo', 'idea', 'personal', 'aprendizaje', 'proyecto', 'salud', 'finanzas', 'viaje', 'familia'];
-    $stmt = $db->prepare("INSERT OR IGNORE INTO config (clave, valor) VALUES (?, ?)");
-    foreach ($default_cats as $cat) {
-        $stmt->execute(["cat_$cat", $cat]);
-    }
-}
-
-initDB();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -88,6 +55,20 @@ initDB();
         .btn-primary:hover { background: var(--accent-border); }
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+
+        /* Header user area */
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .user-badge {
+            color: var(--text-dim); font-size: 0.85rem;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .user-badge .username { color: var(--accent); font-weight: 600; }
+        .btn-logout {
+            background: transparent; color: var(--text-dim); border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
         .search-box {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border);
@@ -170,6 +151,7 @@ initDB();
         @media (max-width: 600px) {
             .container { padding: 1rem; }
             header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .header-right { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
@@ -177,7 +159,11 @@ initDB();
 <div class="container">
     <header>
         <h1>🕰️ Mementos <span>v1.0</span></h1>
-        <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo recuerdo</button>
+        <div class="header-right">
+            <span class="user-badge">👤 <span class="username"><?=htmlspecialchars($_SESSION['username'])?></span></span>
+            <button class="btn-logout" onclick="doLogout()">🚪 Salir</button>
+            <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo recuerdo</button>
+        </div>
     </header>
 
     <input type="text" class="search-box" id="search" placeholder="Buscar recuerdos..." oninput="cargarRecuerdos()">
@@ -186,16 +172,13 @@ initDB();
         <button class="filtro-btn active" data-cat="todas" onclick="filtrar('todas',this)">Todas</button>
         <?php
         $db = getDB();
-        // Categorías que tienen recuerdos
         $cats_data = $db->query("SELECT DISTINCT categoria FROM recuerdos WHERE categoria != '' ORDER BY categoria")->fetchAll(PDO::FETCH_COLUMN);
-        // Categorías sugeridas desde config
         $cats_config = $db->query("SELECT valor FROM config WHERE clave LIKE 'cat_%' ORDER BY valor")->fetchAll(PDO::FETCH_COLUMN);
-        // Merge sin duplicados
         $all_cats = array_unique(array_merge($cats_data, $cats_config));
         sort($all_cats);
         foreach ($all_cats as $c) {
             $escaped_c = htmlspecialchars($c, ENT_QUOTES, 'UTF-8');
-            echo '<button class="filtro-btn" data-cat="' . $escaped_c . '" onclick="filtrar(\'' . $escaped_c . '\',this)">' . ucfirst($escaped_c) . '</button>';
+            echo '<button class="filtro-btn" data-cat="' . $escaped_c . '" onclick=\"filtrar(\'' . $escaped_c . '\',this)\">' . ucfirst($escaped_c) . '</button>';
         }
         ?>
     </div>
@@ -244,7 +227,8 @@ initDB();
 </div>
 
 <script>
-const API = 'api.php';
+const API = '/mementos/api.php';
+const AUTH_API = '/mementos/api/auth.php';
 
 function abrirModal(id = null) {
     document.getElementById('modal').classList.add('active');
@@ -269,6 +253,13 @@ async function cargarRecuerdos() {
     const cat = document.querySelector('.filtro-btn.active')?.dataset.cat || 'todas';
     try {
         const resp = await fetch(`${API}?action=list&search=${search}&categoria=${encodeURIComponent(cat)}`);
+        if (!resp.ok) {
+            if (resp.status === 401) {
+                window.location.href = '/mementos/login.php';
+                return;
+            }
+            throw new Error('HTTP ' + resp.status);
+        }
         const data = await resp.json();
         renderRecuerdos(data);
     } catch (e) {
@@ -363,7 +354,6 @@ async function editarRecuerdo(id) {
             document.getElementById('recuerdo-tags').value = r.data.tags;
             document.getElementById('recuerdo-id').value = r.data.id;
 
-            // Setear categoría en el select
             const cat = r.data.categoria || 'general';
             const sel = document.getElementById('recuerdo-categoria');
             let found = false;
@@ -394,6 +384,17 @@ async function eliminarRecuerdo(id) {
         const r = await resp.json();
         if (r.success) cargarRecuerdos();
     } catch (e) { console.error(e); }
+}
+
+async function doLogout() {
+    try {
+        await fetch(AUTH_API, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'logout'})
+        });
+    } catch (e) {}
+    window.location.href = '/mementos/login.php';
 }
 
 cargarRecuerdos();
