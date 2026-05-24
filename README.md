@@ -234,3 +234,7 @@ Almacena categorías sugeridas. Se pobla automáticamente con 10 categorías def
 ## Licencia
 
 MIT
+
+## Autor
+
+Eduardo Rafael Cohen (Master Edu) - 2026
