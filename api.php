@@ -33,6 +33,11 @@ try {
                     $sql .= " AND categoria = :c";
                     $params[':c'] = $categoria;
                 }
+                $tag = $_GET['tag'] ?? '';
+                if ($tag) {
+                    $sql .= " AND tags LIKE :t";
+                    $params[':t'] = "%$tag%";
+                }
                 $sql .= " ORDER BY creado DESC";
                 $stmt = $db->prepare($sql);
                 foreach ($params as $k => $v) $stmt->bindValue($k, $v);

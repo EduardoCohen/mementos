@@ -24,7 +24,17 @@ try {
                 break;
 
             case 'logout':
+                // Requiere estar logueado para logout
+                Auth::requireAuth();
                 $result = Auth::logout();
+                echo json_encode($result);
+                break;
+
+            case 'change_password':
+                Auth::requireAuth();
+                $current = $input['current_password'] ?? '';
+                $new = $input['new_password'] ?? '';
+                $result = Auth::changePassword($_SESSION['user_id'], $current, $new);
                 echo json_encode($result);
                 break;
 
