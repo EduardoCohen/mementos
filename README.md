@@ -237,4 +237,4 @@ MIT
 
 ## Autor
 
-Eduardo Rafael Cohen (Master Edu) - 2026
+[Eduardo Cohen](https://eduardocohen.com) - 2026
