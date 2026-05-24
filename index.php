@@ -159,6 +159,7 @@ initDB();
             border-radius: 8px; background: var(--bg-input); color: var(--text);
             font-size: 0.95rem;
         }
+        .form-group select { cursor: pointer; }
         .form-group textarea { min-height: 120px; resize: vertical; font-family: inherit; }
         .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
         .modal-actions { display: flex; gap: 0.8rem; justify-content: flex-end; }
@@ -218,19 +219,18 @@ initDB();
         </div>
         <div class="form-group">
             <label>Categoría</label>
-            <input type="text" id="recuerdo-categoria" placeholder="Elegí o escribí una categoría..." list="cats-list">
-            <datalist id="cats-list">
-                <option value="general">
-                <option value="trabajo">
-                <option value="idea">
-                <option value="personal">
-                <option value="aprendizaje">
-                <option value="proyecto">
-                <option value="salud">
-                <option value="finanzas">
-                <option value="viaje">
-                <option value="familia">
-            </datalist>
+            <select id="recuerdo-categoria" onchange="toggleCategoriaOtra()">
+                <?php
+                $db2 = getDB();
+                $cats = $db2->query("SELECT valor FROM config WHERE clave LIKE 'cat_%' ORDER BY valor")->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($cats as $cat) {
+                    $sel = ($cat === 'general') ? 'selected' : '';
+                    echo '<option value="' . htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') . '" ' . $sel . '>' . ucfirst(htmlspecialchars($cat, ENT_QUOTES, 'UTF-8')) . '</option>';
+                }
+                ?>
+                <option value="__otra__">Otra...</option>
+            </select>
+            <input type="text" id="recuerdo-categoria-otra" placeholder="Escribí la nueva categoría..." style="display:none;margin-top:0.5rem;">
         </div>
         <div class="form-group">
             <label>Tags (separados por coma)</label>
@@ -254,6 +254,8 @@ function abrirModal(id = null) {
         document.getElementById('recuerdo-titulo').value = '';
         document.getElementById('recuerdo-contenido').value = '';
         document.getElementById('recuerdo-categoria').value = 'general';
+        document.getElementById('recuerdo-categoria-otra').value = '';
+        document.getElementById('recuerdo-categoria-otra').style.display = 'none';
         document.getElementById('recuerdo-tags').value = '';
     }
 }
@@ -314,14 +316,24 @@ function filtrar(cat, btn) {
     cargarRecuerdos();
 }
 
+function toggleCategoriaOtra() {
+    const input = document.getElementById('recuerdo-categoria-otra');
+    input.style.display = document.getElementById('recuerdo-categoria').value === '__otra__' ? 'block' : 'none';
+    if (input.style.display === 'block') input.focus();
+}
+
 async function guardarRecuerdo() {
     const id = document.getElementById('recuerdo-id').value;
+    const catSelect = document.getElementById('recuerdo-categoria').value;
+    const catOtra = document.getElementById('recuerdo-categoria-otra').value.trim();
+    const categoria = (catSelect === '__otra__' && catOtra) ? catOtra : catSelect;
+
     const payload = {
         action: id ? 'update' : 'create',
         id: id || undefined,
         titulo: document.getElementById('recuerdo-titulo').value,
         contenido: document.getElementById('recuerdo-contenido').value,
-        categoria: document.getElementById('recuerdo-categoria').value || 'general',
+        categoria: categoria || 'general',
         tags: document.getElementById('recuerdo-tags').value,
     };
     if (!payload.titulo.trim()) return;
@@ -348,9 +360,25 @@ async function editarRecuerdo(id) {
             abrirModal(id);
             document.getElementById('recuerdo-titulo').value = r.data.titulo;
             document.getElementById('recuerdo-contenido').value = r.data.contenido;
-            document.getElementById('recuerdo-categoria').value = r.data.categoria;
             document.getElementById('recuerdo-tags').value = r.data.tags;
             document.getElementById('recuerdo-id').value = r.data.id;
+
+            // Setear categoría en el select
+            const cat = r.data.categoria || 'general';
+            const sel = document.getElementById('recuerdo-categoria');
+            let found = false;
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === cat) {
+                    sel.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                sel.value = '__otra__';
+                document.getElementById('recuerdo-categoria-otra').value = cat;
+                document.getElementById('recuerdo-categoria-otra').style.display = 'block';
+            }
         }
     } catch (e) { console.error(e); }
 }
