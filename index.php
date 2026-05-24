@@ -35,6 +35,13 @@ SQL;
         )
 SQL;
     $db->exec($sql2);
+
+    // Categorías por defecto
+    $default_cats = ['general', 'trabajo', 'idea', 'personal', 'aprendizaje', 'proyecto', 'salud', 'finanzas', 'viaje', 'familia'];
+    $stmt = $db->prepare("INSERT OR IGNORE INTO config (clave, valor) VALUES (?, ?)");
+    foreach ($default_cats as $cat) {
+        $stmt->execute(["cat_$cat", $cat]);
+    }
 }
 
 initDB();
@@ -178,10 +185,16 @@ initDB();
         <button class="filtro-btn active" data-cat="todas" onclick="filtrar('todas',this)">Todas</button>
         <?php
         $db = getDB();
-        $cats = $db->query("SELECT DISTINCT categoria FROM recuerdos WHERE categoria != '' ORDER BY categoria")->fetchAll(PDO::FETCH_COLUMN);
-        foreach ($cats as $c) {
+        // Categorías que tienen recuerdos
+        $cats_data = $db->query("SELECT DISTINCT categoria FROM recuerdos WHERE categoria != '' ORDER BY categoria")->fetchAll(PDO::FETCH_COLUMN);
+        // Categorías sugeridas desde config
+        $cats_config = $db->query("SELECT valor FROM config WHERE clave LIKE 'cat_%' ORDER BY valor")->fetchAll(PDO::FETCH_COLUMN);
+        // Merge sin duplicados
+        $all_cats = array_unique(array_merge($cats_data, $cats_config));
+        sort($all_cats);
+        foreach ($all_cats as $c) {
             $escaped_c = htmlspecialchars($c, ENT_QUOTES, 'UTF-8');
-            echo '<button class="filtro-btn" data-cat="' . $escaped_c . '" onclick="filtrar(\'' . $escaped_c . '\',this)">' . $escaped_c . '</button>';
+            echo '<button class="filtro-btn" data-cat="' . $escaped_c . '" onclick="filtrar(\'' . $escaped_c . '\',this)">' . ucfirst($escaped_c) . '</button>';
         }
         ?>
     </div>
@@ -205,7 +218,7 @@ initDB();
         </div>
         <div class="form-group">
             <label>Categoría</label>
-            <input type="text" id="recuerdo-categoria" placeholder="general, trabajo, idea, personal..." list="cats-list">
+            <input type="text" id="recuerdo-categoria" placeholder="Elegí o escribí una categoría..." list="cats-list">
             <datalist id="cats-list">
                 <option value="general">
                 <option value="trabajo">
@@ -213,6 +226,10 @@ initDB();
                 <option value="personal">
                 <option value="aprendizaje">
                 <option value="proyecto">
+                <option value="salud">
+                <option value="finanzas">
+                <option value="viaje">
+                <option value="familia">
             </datalist>
         </div>
         <div class="form-group">
