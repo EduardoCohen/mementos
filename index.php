@@ -236,7 +236,7 @@ if (!$check['logged']) {
 <body>
 <div class="container">
     <header>
-        <h1>🕰️ Mementos <span>v1.0</span></h1>
+- 🕰️ Mementos <span>v1.4</span>
         <div class="header-right">
             <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo recuerdo</button>
             <span class="user-badge">

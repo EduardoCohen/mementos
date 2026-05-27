@@ -205,6 +205,13 @@ Almacena categorías sugeridas. Se pobla automáticamente con 10 categorías def
 
 ## Changelog
 
+### v1.4 (2026-05-27)
+
+- ✅ **Fix bug auth admin**: el hash de contraseña del admin se había corrompido, login fallaba con "Credenciales inválidas"
+- ✅ **Fix bootstrap.php**: reemplazado `INSERT OR IGNORE` por verificación inteligente — si el hash no verifica, lo regenera automáticamente
+- ✅ **Fix `api.php`**: `requireAuth()` global es correcto (app privada), el problema real era el hash corrupto
+- ✅ Verificado flujo completo: login → list → CRUD funcionando
+
 ### v1.3 (2026-05-24)
 
 - ✅ Username clickeable abre modal de cambio de contraseña

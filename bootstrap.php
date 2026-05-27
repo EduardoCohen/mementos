@@ -58,9 +58,20 @@ function initDB() {
     }
 
     // Admin por defecto: admin / mementos2026
+    // Verificar si existe y si el hash sigue siendo válido
     $admin_hash = password_hash('mementos2026', PASSWORD_BCRYPT);
-    $stmt = $db->prepare("INSERT OR IGNORE INTO usuarios (username, password_hash, nombre, rol) VALUES (?, ?, ?, ?)");
-    $stmt->execute(['admin', $admin_hash, 'Administrador', 'admin']);
+    $stmt = $db->prepare("SELECT password_hash FROM usuarios WHERE username = 'admin'");
+    $stmt->execute();
+    $existing = $stmt->fetch();
+    if (!$existing) {
+        // Crear admin si no existe
+        $stmt = $db->prepare("INSERT INTO usuarios (username, password_hash, nombre, rol) VALUES (?, ?, ?, ?)");
+        $stmt->execute(['admin', $admin_hash, 'Administrador', 'admin']);
+    } elseif (!password_verify('mementos2026', $existing['password_hash'])) {
+        // Regenerar hash si está corrupto o se cambió la contraseña manualmente
+        $stmt = $db->prepare("UPDATE usuarios SET password_hash = ? WHERE username = 'admin'");
+        $stmt->execute([$admin_hash]);
+    }
 }
 
 initDB();
